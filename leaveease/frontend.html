@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LeaveEase - Frontend</title>
+  <style>
+    /* Layout and typography */
+    :root{
+      --bg: #f3f5f7;
+      --card-bg: #ffffff;
+      --muted: #6b7280;
+      --accent-green: #2e7d32;
+      --accent-red: #d32f2f;
+      --accent-gray: #6b7280;
+      --shadow: 0 6px 18px rgba(20,24,28,0.06);
+    }
+
+    html,body{height:100%}
+    body {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: #111827;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding: 40px 16px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 { margin: 0 0 14px 0; font-size: 28px; font-weight:600 }
+    h2 { margin: 0 0 10px 0; font-size: 18px; font-weight:600 }
+    .header { margin-bottom: 8px }
+    .header h1 { margin: 0; font-size: 30px }
+    .header p { margin: 4px 0 0 0; font-size: 14px; color: var(--muted) }
+    /* Notice box styles */
+    .notice { padding: 12px 14px; border-radius: 8px; font-size:14px; margin-bottom:8px }
+    .notice-employee { background: rgba(16,185,129,0.12); color: #065f46; border: 1px solid rgba(16,185,129,0.18) }
+    .notice-manager { background: linear-gradient(90deg, rgba(59,130,246,0.08), rgba(249,115,22,0.06)); color: #0f172a; border: 1px solid rgba(59,130,246,0.12) }
+
+    /* Side-by-side panels using flexbox */
+    .grid {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    /* Card panels */
+    .grid > div {
+      background: var(--card-bg);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    /* Main table panel stretches, form has fixed width */
+    .grid > div:first-child { flex: 1 1 auto; }
+    .grid > div:last-child { width: 380px; flex: 0 0 380px; }
+
+    /* Table styling inside card */
+    table { width: 100%; border-collapse: collapse; background: transparent }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #eef0f2; text-align: left; vertical-align: middle }
+    th { background: transparent; color: #374151; font-weight:600; font-size: 13px }
+    tbody tr:last-child td { border-bottom: none }
+
+    /* Form spacing */
+    form { background: transparent; padding: 0; border: 0 }
+    label { display:block; margin-top:10px; font-size: 13px; color: #374151 }
+    input[type="text"], input[type="date"], select, textarea {
+      width:100%; padding:8px 10px; box-sizing:border-box; border:1px solid #e6e9ec; border-radius:6px; margin-top:6px; background:#fff
+    }
+
+    .actions { display:flex; gap:8px }
+    button { padding:8px 12px; cursor:pointer; border-radius:6px; border:0; font-size:14px }
+
+    /* Button colors per request */
+    .btn-primary, .btn-edit { background: var(--accent-green); color: #fff }
+    .btn-delete { background: var(--accent-red); color: #fff }
+    #cancelBtn { background: #e5e7eb; color: var(--accent-gray); border: 0 }
+
+    .small { font-size:13px; padding:6px 10px }
+    .muted { color:var(--muted); font-size:13px; margin-top:12px }
+
+    /* Responsive: stack columns on small screens */
+    @media (max-width: 880px) {
+      .grid { flex-direction: column }
+      .grid > div:last-child { width: 100%; flex: none }
+    }
+    /* Disabled button appearance */
+    button[disabled] { opacity: 0.6; cursor: not-allowed }
+    /* Role-based theme overrides */
+    body.role-manager { --accent-green: #1e3a8a; --accent-red: #ef4444; --card-accent: #1e3a8a; }
+    body.role-employee { --accent-green: #10b981; --accent-red: #dc2626; --card-accent: #10b981; }
+
+    /* Header background per role */
+    .role-manager .header { background: #1e3a8a; color: #fff; padding: 12px 16px; border-radius: 8px; }
+    .role-employee .header { background: #10b981; color: #fff; padding: 12px 16px; border-radius: 8px; }
+
+    /* Card accent strip on the left */
+    .role-manager .grid > div { border-left: 6px solid var(--card-accent); }
+    .role-employee .grid > div { border-left: 6px solid var(--card-accent); }
+
+    /* Ensure buttons pick up new accent variable */
+    .btn-primary, .btn-edit { background: var(--accent-green); }
+    .btn-delete { background: var(--accent-red); }
+  </style>
+</head>
+  <body>
+  <div class="container">
+    <div class="header">
+      <h1 id="mainTitle">LeaveEase</h1>
+      <p id="subtitle" class="muted">Manage leave requests</p>
+    </div>
+    <div id="roleBanner" class="muted" aria-live="polite" style="margin-bottom:12px"></div>
+
+    <!-- Role-specific notice (populated by JS) -->
+    <div id="roleNotice" aria-live="polite" style="margin-bottom:12px"></div>
+
+    <div class="grid">
+    <div>
+      <table id="leavesTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Employee</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leavesBody">
+          <!-- rows rendered by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <form id="leaveForm">
+        <h2 id="formTitle">Create Leave</h2>
+        <input type="hidden" id="leaveId" />
+
+        <label for="employeeName">Employee Name</label>
+        <input id="employeeName" type="text" required />
+
+        <label for="startDate">Start Date</label>
+        <input id="startDate" type="date" required />
+
+        <label for="endDate">End Date</label>
+        <input id="endDate" type="date" required />
+
+        <label for="reason">Reason</label>
+        <textarea id="reason" rows="3"></textarea>
+
+        <label for="status">Status</label>
+        <select id="status">
+          <option value="pending">pending</option>
+          <option value="approved">approved</option>
+          <option value="rejected">rejected</option>
+        </select>
+
+        <div style="margin-top:12px; display:flex; gap:8px">
+          <button id="submitBtn" class="btn-primary">Create</button>
+          <button id="cancelBtn" type="button" style="display:none">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Determine role from URL (default to employee)
+    const urlParams = new URLSearchParams(window.location.search);
+    const role = (urlParams.get('role') || 'employee').toLowerCase();
+    const roleBanner = document.getElementById('roleBanner');
+    roleBanner.textContent = 'Logged in as ' + (role === 'manager' ? 'Manager' : 'Employee');
+
+    // Update header title & subtitle based on role
+    const mainTitle = document.getElementById('mainTitle');
+    const subtitle = document.getElementById('subtitle');
+    const roleNotice = document.getElementById('roleNotice');
+    if (role === 'manager') {
+      mainTitle.textContent = 'LeaveEase – Manager Dashboard';
+      subtitle.textContent = 'You can approve, edit or delete leave requests.';
+      // Manager notice
+      roleNotice.className = 'notice notice-manager';
+      roleNotice.innerHTML = 'You are managing all employee leave requests. You can edit, approve, or delete entries.';
+    } else {
+      mainTitle.textContent = 'LeaveEase – My Leave Requests';
+      subtitle.textContent = 'You can submit leave requests and track their status.';
+      // Employee notice
+      roleNotice.className = 'notice notice-employee';
+      roleNotice.innerHTML = 'You can create leave requests and view their status. Editing or deleting requests is not available for employees.';
+    }
+
+    // Add role-specific class to <body> for theming: role-manager or role-employee
+    if (role === 'manager') {
+      document.body.classList.remove('role-employee');
+      document.body.classList.add('role-manager');
+    } else {
+      document.body.classList.remove('role-manager');
+      document.body.classList.add('role-employee');
+    }
+
+    // Initial dataset
+    let leaves = [
+      { id: 1, employeeName: 'Alice', startDate: '2025-12-01', endDate: '2025-12-05', reason: 'Vacation', status: 'pending' },
+      { id: 2, employeeName: 'Bob', startDate: '2025-11-20', endDate: '2025-11-22', reason: 'Medical', status: 'approved' }
+    ];
+    let nextId = leaves.length ? Math.max(...leaves.map(l => l.id)) + 1 : 1;
+
+    const leavesBody = document.getElementById('leavesBody');
+    const leaveForm = document.getElementById('leaveForm');
+    const formTitle = document.getElementById('formTitle');
+    const leaveIdInput = document.getElementById('leaveId');
+    const employeeNameInput = document.getElementById('employeeName');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const reasonInput = document.getElementById('reason');
+    const statusSelect = document.getElementById('status');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    function renderTable() {
+      if (leaves.length === 0) {
+        leavesBody.innerHTML = '<tr><td colspan="7" style="text-align:center">No leaves</td></tr>';
+        return;
+      }
+      // determine if current role can modify
+      const canModify = role === 'manager';
+
+      leavesBody.innerHTML = leaves.map(l => {
+        const editBtn = canModify
+          ? `<button class="small btn-edit" onclick="editLeave(${l.id})">Edit</button>`
+          : `<button class="small btn-edit" disabled title="Disabled for Employee">Edit</button>`;
+        const deleteBtn = canModify
+          ? `<button class="small btn-delete" onclick="deleteLeave(${l.id})">Delete</button>`
+          : `<button class="small btn-delete" disabled title="Disabled for Employee">Delete</button>`;
+
+        return `
+        <tr>
+          <td>${l.id}</td>
+          <td>${escapeHtml(l.employeeName)}</td>
+          <td>${escapeHtml(l.startDate)}</td>
+          <td>${escapeHtml(l.endDate)}</td>
+          <td>${escapeHtml(l.reason)}</td>
+          <td>${escapeHtml(l.status)}</td>
+          <td class="actions">
+            ${editBtn}
+            ${deleteBtn}
+          </td>
+        </tr>
+      `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      if (str === undefined || str === null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function resetForm() {
+      leaveIdInput.value = '';
+      employeeNameInput.value = '';
+      startDateInput.value = '';
+      endDateInput.value = '';
+      reasonInput.value = '';
+      statusSelect.value = 'pending';
+      formTitle.textContent = 'Create Leave';
+      submitBtn.textContent = 'Create';
+      cancelBtn.style.display = 'none';
+    }
+
+    leaveForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const idVal = leaveIdInput.value;
+      const payload = {
+        employeeName: employeeNameInput.value.trim(),
+        startDate: startDateInput.value,
+        endDate: endDateInput.value,
+        reason: reasonInput.value.trim(),
+        status: statusSelect.value
+      };
+
+      if (!payload.employeeName || !payload.startDate || !payload.endDate) {
+        alert('Please fill required fields: Employee Name, Start Date, End Date');
+        return;
+      }
+
+      if (idVal) {
+        // update
+        const id = parseInt(idVal, 10);
+        const idx = leaves.findIndex(l => l.id === id);
+        if (idx !== -1) {
+          leaves[idx] = Object.assign({}, leaves[idx], payload);
+        }
+      } else {
+        // create
+        const newLeave = Object.assign({ id: nextId++ }, payload);
+        leaves.push(newLeave);
+      }
+
+      resetForm();
+      renderTable();
+    });
+
+    cancelBtn.addEventListener('click', function () {
+      resetForm();
+    });
+
+    // Expose edit/delete to global scope for inline handlers
+    window.editLeave = function (id) {
+      const leave = leaves.find(l => l.id === id);
+      if (!leave) return alert('Leave not found');
+      leaveIdInput.value = leave.id;
+      employeeNameInput.value = leave.employeeName;
+      startDateInput.value = leave.startDate;
+      endDateInput.value = leave.endDate;
+      reasonInput.value = leave.reason;
+      statusSelect.value = leave.status || 'pending';
+      formTitle.textContent = 'Edit Leave #' + leave.id;
+      submitBtn.textContent = 'Save';
+      cancelBtn.style.display = '';
+      // scroll into view
+      leaveForm.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.deleteLeave = function (id) {
+      if (!confirm('Delete leave #' + id + '?')) return;
+      leaves = leaves.filter(l => l.id !== id);
+      renderTable();
+      // if we were editing this leave, reset the form
+      if (leaveIdInput.value && parseInt(leaveIdInput.value, 10) === id) resetForm();
+    };
+
+    // initial render
+    renderTable();
+  </script>
+</body>
+</html>

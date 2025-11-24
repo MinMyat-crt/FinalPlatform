@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LeaveEase - Login</title>
+  <style>
+    :root{ --bg:#f3f6f9; --card:#fff; --accent:#2563eb; --muted:#6b7280 }
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+    body{display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px}
+    .card{width:100%;max-width:420px;background:var(--card);border-radius:12px;box-shadow:0 8px 24px rgba(16,24,40,0.08);padding:28px;box-sizing:border-box}
+    h1{margin:0 0 8px 0;font-size:20px}
+    p.lead{margin:0 0 18px 0;color:var(--muted);font-size:14px}
+    label{display:block;margin-top:10px;font-size:13px;color:#111827}
+    input[type="email"], input[type="password"], select{width:100%;padding:10px;border:1px solid #e6e9ef;border-radius:8px;margin-top:6px;box-sizing:border-box}
+    .row{display:flex;gap:8px;align-items:center}
+    .actions{margin-top:18px;display:flex;gap:10px}
+    .btn{padding:10px 14px;border-radius:8px;border:0;font-weight:600;cursor:pointer}
+    .btn-login{background:var(--accent);color:#fff}
+    .btn-cancel{background:#e6e9ef;color:#374151}
+    .muted{color:var(--muted);font-size:13px;margin-top:12px}
+    @media (max-width:480px){.card{padding:18px}}
+  </style>
+</head>
+<body>
+  <div class="card" role="region" aria-label="Login">
+    <h1>Sign in</h1>
+    <p class="lead">Welcome — please sign in to continue.</p>
+
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="you@example.com" required />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Password" required />
+
+      <label for="role">Role</label>
+      <select id="role">
+        <option value="employee">Employee</option>
+        <option value="manager">Manager</option>
+      </select>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-login">Login</button>
+        <button id="cancel" type="button" class="btn btn-cancel">Cancel</button>
+      </div>
+    </form>
+
+    
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const cancelBtn = document.getElementById('cancel');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const role = document.getElementById('role').value || 'employee';
+      // Redirect to frontend with role query
+      window.location.href = 'frontend.html?role=' + encodeURIComponent(role);
+    });
+
+    cancelBtn.addEventListener('click', function () {
+      // clear inputs
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('role').selectedIndex = 0;
+    });
+  </script>
+</body>
+</html>
