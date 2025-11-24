@@ -41,6 +41,21 @@
     .notice { padding: 12px 14px; border-radius: 8px; font-size:14px; margin-bottom:8px }
     .notice-employee { background: rgba(16,185,129,0.12); color: #065f46; border: 1px solid rgba(16,185,129,0.18) }
     .notice-manager { background: linear-gradient(90deg, rgba(59,130,246,0.08), rgba(249,115,22,0.06)); color: #0f172a; border: 1px solid rgba(59,130,246,0.12) }
+    /* Manager-specific layout: single full-width card centered */
+    body.role-manager .container { max-width: 900px; }
+    body.role-manager .grid { display: block; }
+    body.role-manager #formPanel { display: none; }
+    body.role-manager .grid > div:first-child { width: 100%; margin: 0 auto; padding: 20px; box-sizing: border-box }
+    /* Thick blue left border on the main card for manager */
+    body.role-manager .grid > div:first-child { border-left: 8px solid #1e3a8a; border-radius: 10px; }
+    /* Header bar styling for manager */
+    body.role-manager .header { background:#1e3a8a; color:#fff; padding:14px 18px; border-radius:8px; }
+    body.role-manager .header p { color: rgba(255,255,255,0.9) }
+    /* Notice box for manager: gray/peach tone */
+    body.role-manager .notice-manager { background: #fff7ed; color: #7c3aed; border-color: rgba(59,130,246,0.12) }
+    /* Manager-specific Approve/Reject colors (green/red) */
+    body.role-manager .btn-approve { background: #16a34a; color: #ffffff; }
+    body.role-manager .btn-reject { background: #dc2626; color: #ffffff; }
 
     /* Side-by-side panels using flexbox */
     .grid {
@@ -141,7 +156,7 @@
       </table>
     </div>
 
-    <div>
+    <div id="formPanel">
       <form id="leaveForm">
         <h2 id="formTitle">Create Leave</h2>
         <input type="hidden" id="leaveId" />
@@ -158,12 +173,7 @@
         <label for="reason">Reason</label>
         <textarea id="reason" rows="3"></textarea>
 
-        <label for="status">Status</label>
-        <select id="status">
-          <option value="pending">pending</option>
-          <option value="approved">approved</option>
-          <option value="rejected">rejected</option>
-        </select>
+        <!-- status removed from employee form -->
 
         <div style="margin-top:12px; display:flex; gap:8px">
           <button id="submitBtn" class="btn-primary">Create</button>
@@ -202,6 +212,9 @@
     if (role === 'manager') {
       document.body.classList.remove('role-employee');
       document.body.classList.add('role-manager');
+      // remove the form panel entirely for managers
+      const fp = document.getElementById('formPanel');
+      if (fp) fp.remove();
     } else {
       document.body.classList.remove('role-manager');
       document.body.classList.add('role-employee');
@@ -222,7 +235,6 @@
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const reasonInput = document.getElementById('reason');
-    const statusSelect = document.getElementById('status');
     const submitBtn = document.getElementById('submitBtn');
     const cancelBtn = document.getElementById('cancelBtn');
 
@@ -231,18 +243,33 @@
         leavesBody.innerHTML = '<tr><td colspan="7" style="text-align:center">No leaves</td></tr>';
         return;
       }
-      // determine if current role can modify
-      const canModify = role === 'manager';
+      const isManager = role === 'manager';
+
+      // Adjust table header: remove Actions column for employees
+      const headerRow = document.querySelector('#leavesTable thead tr');
+      if (!isManager) {
+        // remove last th if it's Actions
+        const ths = headerRow.querySelectorAll('th');
+        const last = ths[ths.length - 1];
+        if (last && /actions/i.test(last.textContent)) last.remove();
+      } else {
+        // ensure Actions header exists for managers
+        const ths = headerRow.querySelectorAll('th');
+        const last = ths[ths.length - 1];
+        if (!last || !/actions/i.test(last.textContent)) {
+          const th = document.createElement('th');
+          th.textContent = 'Actions';
+          headerRow.appendChild(th);
+        }
+      }
 
       leavesBody.innerHTML = leaves.map(l => {
-        const editBtn = canModify
-          ? `<button class="small btn-edit" onclick="editLeave(${l.id})">Edit</button>`
-          : `<button class="small btn-edit" disabled title="Disabled for Employee">Edit</button>`;
-        const deleteBtn = canModify
-          ? `<button class="small btn-delete" onclick="deleteLeave(${l.id})">Delete</button>`
-          : `<button class="small btn-delete" disabled title="Disabled for Employee">Delete</button>`;
-
-        return `
+        if (isManager) {
+          const actionHtml = `
+            <button class="small btn-approve" onclick="approveLeave(${l.id})">Approve</button>
+            <button class="small btn-reject" onclick="rejectLeave(${l.id})">Reject</button>
+          `;
+          return `
         <tr>
           <td>${l.id}</td>
           <td>${escapeHtml(l.employeeName)}</td>
@@ -251,9 +278,21 @@
           <td>${escapeHtml(l.reason)}</td>
           <td>${escapeHtml(l.status)}</td>
           <td class="actions">
-            ${editBtn}
-            ${deleteBtn}
+            ${actionHtml}
           </td>
+        </tr>
+      `;
+        }
+
+        // Employee view: no actions column
+        return `
+        <tr>
+          <td>${l.id}</td>
+          <td>${escapeHtml(l.employeeName)}</td>
+          <td>${escapeHtml(l.startDate)}</td>
+          <td>${escapeHtml(l.endDate)}</td>
+          <td>${escapeHtml(l.reason)}</td>
+          <td>${escapeHtml(l.status)}</td>
         </tr>
       `;
       }).join('');
@@ -275,73 +314,70 @@
       startDateInput.value = '';
       endDateInput.value = '';
       reasonInput.value = '';
-      statusSelect.value = 'pending';
+      // statusSelect removed from form; do nothing here
       formTitle.textContent = 'Create Leave';
       submitBtn.textContent = 'Create';
       cancelBtn.style.display = 'none';
     }
 
-    leaveForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      const idVal = leaveIdInput.value;
-      const payload = {
-        employeeName: employeeNameInput.value.trim(),
-        startDate: startDateInput.value,
-        endDate: endDateInput.value,
-        reason: reasonInput.value.trim(),
-        status: statusSelect.value
-      };
+    // Only attach form submit handler for employees; managers don't have the form
+    if (role === 'employee' && leaveForm) {
+      leaveForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const idVal = leaveIdInput.value;
+        const payload = {
+          employeeName: employeeNameInput.value.trim(),
+          startDate: startDateInput.value,
+          endDate: endDateInput.value,
+          reason: reasonInput.value.trim(),
+          status: 'pending'
+        };
 
-      if (!payload.employeeName || !payload.startDate || !payload.endDate) {
-        alert('Please fill required fields: Employee Name, Start Date, End Date');
-        return;
-      }
-
-      if (idVal) {
-        // update
-        const id = parseInt(idVal, 10);
-        const idx = leaves.findIndex(l => l.id === id);
-        if (idx !== -1) {
-          leaves[idx] = Object.assign({}, leaves[idx], payload);
+        if (!payload.employeeName || !payload.startDate || !payload.endDate) {
+          alert('Please fill required fields: Employee Name, Start Date, End Date');
+          return;
         }
-      } else {
-        // create
-        const newLeave = Object.assign({ id: nextId++ }, payload);
-        leaves.push(newLeave);
-      }
 
-      resetForm();
+        if (idVal) {
+          // update (shouldn't happen for employees in this UI)
+          const id = parseInt(idVal, 10);
+          const idx = leaves.findIndex(l => l.id === id);
+          if (idx !== -1) {
+            leaves[idx] = Object.assign({}, leaves[idx], payload);
+          }
+        } else {
+          // create
+          const newLeave = Object.assign({ id: nextId++ }, payload);
+          leaves.push(newLeave);
+        }
+
+        resetForm();
+        renderTable();
+      });
+    }
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', function () {
+        resetForm();
+      });
+    }
+
+    // Manager actions: approve or reject (change status only)
+    window.approveLeave = function (id) {
+      const idx = leaves.findIndex(l => l.id === id);
+      if (idx === -1) return alert('Leave not found');
+      leaves[idx] = Object.assign({}, leaves[idx], { status: 'approved' });
       renderTable();
-    });
-
-    cancelBtn.addEventListener('click', function () {
-      resetForm();
-    });
-
-    // Expose edit/delete to global scope for inline handlers
-    window.editLeave = function (id) {
-      const leave = leaves.find(l => l.id === id);
-      if (!leave) return alert('Leave not found');
-      leaveIdInput.value = leave.id;
-      employeeNameInput.value = leave.employeeName;
-      startDateInput.value = leave.startDate;
-      endDateInput.value = leave.endDate;
-      reasonInput.value = leave.reason;
-      statusSelect.value = leave.status || 'pending';
-      formTitle.textContent = 'Edit Leave #' + leave.id;
-      submitBtn.textContent = 'Save';
-      cancelBtn.style.display = '';
-      // scroll into view
-      leaveForm.scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.deleteLeave = function (id) {
-      if (!confirm('Delete leave #' + id + '?')) return;
-      leaves = leaves.filter(l => l.id !== id);
+    window.rejectLeave = function (id) {
+      const idx = leaves.findIndex(l => l.id === id);
+      if (idx === -1) return alert('Leave not found');
+      leaves[idx] = Object.assign({}, leaves[idx], { status: 'rejected' });
       renderTable();
-      // if we were editing this leave, reset the form
-      if (leaveIdInput.value && parseInt(leaveIdInput.value, 10) === id) resetForm();
     };
+
+    // deleteLeave removed per manager-only restrictions; deletions are not exposed in manager UI
 
     // initial render
     renderTable();
