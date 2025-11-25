@@ -19,6 +19,10 @@
     .btn-login{background:var(--accent);color:#fff}
     .btn-cancel{background:#e6e9ef;color:#374151}
     .muted{color:var(--muted);font-size:13px;margin-top:12px}
+    .tips{margin-top:20px;padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;font-size:13px;color:#0f172a}
+    .tips strong{display:block;margin-bottom:8px;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:#475569}
+    .tips ul{margin:0;padding-left:18px}
+    .tips li{margin-bottom:4px}
     @media (max-width:480px){.card{padding:18px}}
   </style>
 </head>
@@ -46,25 +50,55 @@
       </div>
     </form>
 
-    
+    <div class="tips">
+      <strong>Demo credentials</strong>
+      <ul>
+        <li>Employee — Email: <code>alice@example.com</code>, Password: <code>alice123</code></li>
+        <li>Manager — Email: <code>carol@example.com</code>, Password: <code>manager123</code></li>
+      </ul>
+    </div>
   </div>
 
   <script>
     const form = document.getElementById('loginForm');
     const cancelBtn = document.getElementById('cancel');
+    const roleSelect = document.getElementById('role');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+
+    const DEMO_USERS = [
+      { email: 'alice@example.com', password: 'alice123', role: 'employee', userName: 'Alice' },
+      { email: 'carol@example.com', password: 'manager123', role: 'manager', userName: 'Carol' }
+    ];
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      const role = document.getElementById('role').value || 'employee';
-      // Redirect to frontend with role query
-      window.location.href = 'frontend.html?role=' + encodeURIComponent(role);
+      const role = roleSelect.value || 'employee';
+      const emailVal = (emailInput.value || '').trim().toLowerCase();
+      const passwordVal = passwordInput.value || '';
+
+      const match = DEMO_USERS.find(u => u.email === emailVal && u.password === passwordVal);
+      if (!match) {
+        alert('Invalid email or password. Use the demo credentials listed below.');
+        return;
+      }
+      if (match.role !== role) {
+        alert(`Please select the ${match.role} role for this account.`);
+        roleSelect.value = match.role;
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('role', match.role);
+      params.set('user', match.userName);
+      window.location.href = 'frontend.html?' + params.toString();
     });
 
     cancelBtn.addEventListener('click', function () {
       // clear inputs
-      document.getElementById('email').value = '';
-      document.getElementById('password').value = '';
-      document.getElementById('role').selectedIndex = 0;
+      emailInput.value = '';
+      passwordInput.value = '';
+      roleSelect.selectedIndex = 0;
     });
   </script>
 </body>

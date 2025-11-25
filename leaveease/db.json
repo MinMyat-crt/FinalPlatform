@@ -1,0 +1,49 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "alice@example.com",
+      "name": "Alice",
+      "role": "employee"
+    },
+    {
+      "id": 2,
+      "email": "bob@example.com",
+      "name": "Bob",
+      "role": "employee"
+    },
+    {
+      "id": 3,
+      "email": "carol@example.com",
+      "name": "Carol",
+      "role": "manager"
+    }
+  ],
+  "leaveRequests": [
+    {
+      "id": 1,
+      "employeeName": "Alice",
+      "startDate": "2025-12-01",
+      "endDate": "2025-12-05",
+      "reason": "Vacation",
+      "status": "pending"
+    },
+    {
+      "id": 2,
+      "employeeName": "Bob",
+      "startDate": "2025-11-20",
+      "endDate": "2025-11-22",
+      "reason": "Medical",
+      "status": "rejected"
+    },
+    {
+      "id": 6,
+      "employeeName": "Alice",
+      "startDate": "2025-11-30",
+      "endDate": "2025-12-10",
+      "reason": "Sick Leave",
+      "status": "rejected"
+    }
+  ],
+  "nextId": 7
+}
